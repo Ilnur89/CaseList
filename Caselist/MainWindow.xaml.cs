@@ -1,4 +1,5 @@
-﻿using Caselist.TodoModel;
+﻿using Caselist.SaveDate;
+using Caselist.TodoModel;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -22,20 +23,55 @@ namespace Caselist
     /// </summary>
     public partial class MainWindow : Window
     {
-        private BindingList<ToDoModel> _todoDate;
+        /// <summary>
+        /// Создаем контейнер для списка дел
+        /// </summary>
+        private readonly string PATH= $"{Environment.CurrentDirectory}\\caselist.json";
+        private BindingList<ToDoModel> _todoDateList;
+        private FileService _fileserv;
         public MainWindow()
         {
             InitializeComponent();
         }
-
+        /// <summary>
+        /// Делаем привязку
+        /// наших дел к интерфейсу(<DateGrid/>)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _todoDate = new BindingList<ToDoModel>()
+            _fileserv = new FileService(PATH);
+
+            try
             {
-                new ToDoModel(){text="jhjhbj"},
-                new ToDoModel(){text="nbn"}
-            };
-            dgTodolist.ItemsSource=_todoDate;
+               _todoDateList = _fileserv.Load();
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                Close();
+            }
+
+             dgTodolist.ItemsSource=_todoDateList;
+            _todoDateList.ListChanged += _todoDateList_ListChanged;  //Когда будет что-то изменяться будет вызываться событие            
+         }
+
+        private void _todoDateList_ListChanged(object sender, ListChangedEventArgs e)
+        {
+            if (e.ListChangedType == ListChangedType.ItemAdded || e.ListChangedType == ListChangedType.ItemDeleted || e.ListChangedType == ListChangedType.ItemChanged)
+            {
+                try
+                {
+                    _fileserv.Save(sender);
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                    Close();
+                }
+            }
+            
         }
     }
 }
